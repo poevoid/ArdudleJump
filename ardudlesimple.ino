@@ -131,7 +131,7 @@ void loop() {
       }
 
       ///if player touches platform, playerx + 1 (10 times) to sim jumping. if player jumps above half the screen, move the screen instead of jumping and draw new platforms
-      if (collision()) {
+      if (player.jumping == false && (collision())) {
         player.jumping = true;
         player.jumpIndex++;
       }
