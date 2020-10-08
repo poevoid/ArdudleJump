@@ -1,2 +1,2 @@
 # ArdudleJump
-(unfinished)Doodle-Jump-Like game written in C++ for the Arduboy gaming platform 
+(very unfinished)Doodle-Jump-Like game written in C++ for the Arduboy gaming platform 
