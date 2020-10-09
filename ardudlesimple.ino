@@ -151,14 +151,14 @@ void loop() {
 
         }
      */
-      if (player.x >= 75) {
+      if (player.x >= 100) {
         player.jumping = false;
-        platforms.x = random(1, WIDTH);
-        platforms.y = random(1, HEIGHT);
-        platforml.x = random(1, WIDTH);
-        platforml.y = random(1, HEIGHT);
-        platformm.x = random(1, WIDTH);
-        platformm.y = random(1, HEIGHT);
+        platforms.x = random(WIDTH/3);
+        platforms.y = random(HEIGHT-10);
+        platforml.x = random(WIDTH/3, 2*WIDTH/3);
+        platforml.y = random(HEIGHT-28);
+        platformm.x = random(2*WIDTH/3, WIDTH);
+        platformm.y = random(HEIGHT-18);
         playerscore++;
       }
       
