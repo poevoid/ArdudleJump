@@ -41,10 +41,7 @@ void updateArdudle() {
   if (player.y == HEIGHT) {
     player.y = 0;
   }
-  if (player.x == 0) {
-        gamestate = 2;
-      }
-}
+} 
 void resetGame() {
   player.x = WIDTH/2;
   player.y = HEIGHT / 2;
@@ -101,10 +98,8 @@ void loop() {
     case 0:
       //title
       resetGame();
-      arduboy.setCursor(0, 0);
-      arduboy.print("ArdudleJump!");
-      arduboy.setCursor(10, 10);
-      arduboy.print("Press A for 1 Player");
+      Sprites::drawOverwrite(WIDTH - 10, 0, TITLE, 0);
+      Sprites::drawOverwrite(WIDTH/2 -7, 15, TITLEsub, 0);
       if (arduboy.justPressed(A_BUTTON)) {
         
         gamestate = 1;
@@ -115,7 +110,9 @@ void loop() {
       //gameplay
       arduboy.clear();
       //gameover if player touches bottom
-      
+      if (player.x <= 0) {
+        gamestate = 2;
+      }
       //left & right
       if (arduboy.pressed(UP_BUTTON)) {
         player.y--;
@@ -156,21 +153,18 @@ void loop() {
      */
       if (player.x >= 75) {
         player.jumping = false;
-        platforms.x = random(WIDTH/3);
-        platforms.y = random(HEIGHT/3);
-        platforml.x = random(WIDTH/3);
-        platforml.y = random(HEIGHT/3);
-        platformm.x = random(WIDTH/3);
-        platformm.y = random(HEIGHT/3);
+        platforms.x = random(1, WIDTH);
+        platforms.y = random(1, HEIGHT);
+        platforml.x = random(1, WIDTH);
+        platforml.y = random(1, HEIGHT);
+        platformm.x = random(1, WIDTH);
+        platformm.y = random(1, HEIGHT);
         playerscore++;
       }
       
 
       //print score
-      arduboy.setCursor(1, 0);
-      arduboy.print(F("Score: "));
-      arduboy.setCursor(39, 0);
-      arduboy.print(playerscore);
+      
       break;
 
     case 2:
@@ -183,9 +177,8 @@ void loop() {
       if (arduboy.justPressed(A_BUTTON)) {
         gamestate = 3;
       }
-      arduboy.setCursor(0, 0);
-      arduboy.print("Game Over");
-      
+      Sprites::drawOverwrite(WIDTH/2, 10, GAME, 0);
+      Sprites::drawOverwrite(WIDTH/2 - 14, 10, OVER, 0);
       break;
 
     case 3:
@@ -193,9 +186,18 @@ void loop() {
       if (arduboy.justPressed(A_BUTTON)) {
         gamestate = 0;
       }
-      arduboy.setCursor(35, 0);
-      arduboy.print("Highscore: \n");
-      arduboy.print(highscore);
+      Sprites::drawOverwrite(WIDTH/2 + 12, 0, HIGHSCORE, 0);
+      Sprites::drawOverwrite(WIDTH/2, 0, One, 0);
+      Sprites::drawOverwrite(WIDTH/2 -7, 0, Two, 0);
+      Sprites::drawOverwrite(WIDTH/2 -14, 0, Three, 0);
+      Sprites::drawOverwrite(WIDTH/2 -21, 0, Four, 0);
+      Sprites::drawOverwrite(WIDTH/2 -28, 0, Five, 0);
+      Sprites::drawOverwrite(WIDTH/2 -35, 0, Six, 0);
+      Sprites::drawOverwrite(WIDTH/2 -42, 0, Seven, 0);
+      Sprites::drawOverwrite(WIDTH/2 -49, 0, Eight, 0);
+      Sprites::drawOverwrite(WIDTH/2 -56, 0, Nine, 0);
+      Sprites::drawOverwrite(WIDTH/2 -63, 0, One, 0);
+      Sprites::drawOverwrite(WIDTH/2 -63, 4, Zero, 0);
       break;
 
   }
