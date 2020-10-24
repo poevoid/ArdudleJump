@@ -6,26 +6,28 @@
 #include "ext.h"
 #include "imgaudio.h"
 #include "EEPROMUtils.h"
+#define NUMBER_OF_PLATFORMS 5
 Arduboy2 arduboy;
 ArduboyTones sound(arduboy.audio.enabled);
 uint16_t playerscore = 0;
 int16_t highscore = 0;
 int gamestate = 0;
 Player player = {0, 0, Stance::Left, false, playerright, playerrightmask };
-PlatformS platforms = { 0, 0, Type::Solid, smallplatform, smallplatformmask};
-PlatformM platformm = { 0, 0, Type::Solid, mediumplatform, mediumplatformmask};
-PlatformL platforml = { 0, 0, Type::Solid, largeplatform, largeplatformmask};
+Platform platforms[NUMBER_OF_PLATFORMS] = {
+  {0, 0, Type::Small, false, smallplatform, smallplatformmask},
+  {0, 0, Type::Small, false, smallplatform, smallplatformmask},
+  {0, 0, Type::Small, false, smallplatform, smallplatformmask},
+  {0, 0, Type::Small, false, smallplatform, smallplatformmask},
+  {0, 0, Type::Small, false, smallplatform, smallplatformmask},
+};
+
 const uint8_t *player_images[] = {playerleft, playerright};
 const uint8_t *player_masks[] = {playerleftmask, playerrightmask};
-const uint8_t *platforms_images[] = {smallplatform};
-const uint8_t *platforms_masks[] = {smallplatformmask};
-const uint8_t *platformm_images[] = {mediumplatform};
-const uint8_t *platformm_masks[] = {mediumplatformmask};
-const uint8_t *platforml_images[] = {largeplatform};
-const uint8_t *platforml_masks[] = {largeplatformmask};
+const uint8_t *platform_images[] = {smallplatform, mediumplatform, largeplatform};
+const uint8_t *platform_masks[] = {smallplatformmask, mediumplatformmask, largeplatformmask};
 const uint8_t *background_images[] = {bgtile1, bgtile2};
 uint8_t jumpCoords[] = {0, 4, 6, 5, 4, 3, 3, 3, 2, 3, 2, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0};
-
+bool platformLaunchCountdown = false;
 void updateArdudle() {
   if (player.jumping) {
     player.x = player.x + jumpCoords[player.jumpIndex];
@@ -41,42 +43,255 @@ void updateArdudle() {
   if (player.y == HEIGHT) {
     player.y = 0;
   }
-} 
+}
+ 
+void updatePlatforms() {
+  for (uint8_t i = 0; i < NUMBER_OF_PLATFORMS; i++) {
+    if (platforms[i].enabled == true) {
+    switch (platforms[i].type) {
+      case Type::Small:
+       break;
+      case Type::Medium:
+       break;
+      case Type::Large:
+      ///if the player is above half the screen, move the platforms down by how high the player jumps 
+      if (player.x > WIDTH/2) {
+        playerscore++;
+        platforms[i].x = platforms[i].x - jumpCoords[player.jumpIndex];
+        }
+        break;
+    }
+    //out of view?
+    if (platforms[i].x == 0) {
+      platforms[i].enabled = false;
+      platformLaunchCountdown = true;
+    }
+  }
+ }
+}
+
+void launchPlatform(uint8_t platformNumber) {
+  Type randomUpper = Type::Small;
+  switch (playerscore) {
+    case 0 ... 99:
+    randomUpper = Type::Small;
+    break;
+    case 100 ... 199:
+    randomUpper = Type::Medium;
+    break;
+    case 200 ... 299:
+    randomUpper = Type::Large;
+    break;
+    default:
+    randomUpper = Type::Count_All_Platforms;
+    break;
+  }
+  uint8_t randomLowerVal = static_cast<uint8_t>(Type::Small);
+  uint8_t randomUpperVal = static_cast <uint8_t>(randomUpper);
+  uint8_t randomPlatform = random(randomLowerVal, randomUpperVal + 1);
+  Type type = static_cast<Type>(randomPlatform);
+  //launch
+  platforms[platformNumber].type = type;
+  platforms[platformNumber].enabled = true;
+  platforms[platformNumber].x = random(HEIGHT);
+  platforms[platformNumber].y = WIDTH;
+}
+
 void resetGame() {
   player.x = WIDTH/2;
   player.y = HEIGHT / 2;
+  platforms[1].x = 12;
+  platforms[1].y = 10;
+  platforms[2].x = 45;
+  platforms[2].y = 15;
+  platforms[3].x = 75;
+  platforms[3].y = 84;
+  platforms[4].x = 30;
+  platforms[4].y = 34;
+  platforms[5].x = 96;
+  platforms[5].y = 17;
   playerscore = 0;
-  platforms.x = 10;
-  platforms.y = 10;
-  platforml.x = 55;
-  platforml.y = 30;
-  platformm.x = 65;
-  platformm.y = 50;
   player.jumpIndex = 0;
 }
+
 void drawPlayer() {
   uint8_t imageIndex = static_cast<uint8_t>(player.stance);
   player.image = player_images[imageIndex];
   player.mask = player_masks[imageIndex];
   Sprites::drawExternalMask(player.x, player.y - getImageHeight(player.image), player.image, player.mask, 0, 0);
 }
-void drawPlatformS() {
-  uint8_t imageIndex = static_cast<uint8_t>(platforms.type);
-  platforms.image = platforms_images[imageIndex];
-  platforms.mask = platforms_masks[imageIndex];
-  Sprites::drawExternalMask(platforms.x, platforms.y - getImageHeight(platforms.image), platforms.image, platforms.mask, 0, 0);
+void drawPlatforms() {
+  for (uint8_t i = 0; i < NUMBER_OF_PLATFORMS; i++) {
+   if (platforms[i].enabled == true) {
+    uint8_t imageIndex = static_cast<uint8_t>(platforms[i].type);
+    platforms[i].image = platform_images[imageIndex];
+    platforms[i].mask = platform_masks[imageIndex];
+    Sprites::drawExternalMask(platforms[i].x, platforms[i].y - getImageHeight(platforms[i].image), platforms[i].image, platforms[i].mask, 0, 0);
+  }
+ }
 }
-void drawPlatformM() {
-  uint8_t imageIndex = static_cast<uint8_t>(platformm.type);
-  platformm.image = platformm_images[imageIndex];
-  platformm.mask = platformm_masks[imageIndex];
-  Sprites::drawExternalMask(platformm.x, platformm.y - getImageHeight(platformm.image), platformm.image, platformm.mask, 0, 0);
-}
-void drawPlatformL() {
-  uint8_t imageIndex = static_cast<uint8_t>(platforml.type);
-  platforml.image = platforml_images[imageIndex];
-  platforml.mask = platforml_masks[imageIndex];
-  Sprites::drawExternalMask(platforml.x, platforml.y - getImageHeight(platforml.image), platforml.image, platforml.mask, 0, 0);
+void drawScore() {
+   if (playerscore == 0) {
+    Sprites::drawOverwrite(122, 0, Zero, 0);
+    Sprites::drawOverwrite(122, 5, Zero, 0);
+   };
+   if (playerscore == 1) Sprites::drawOverwrite(122, 0, One, 0);
+   if (playerscore == 2) Sprites::drawOverwrite(122, 0, Two, 0);
+   if (playerscore == 3) Sprites::drawOverwrite(122, 0, Three, 0);
+   if (playerscore == 4) Sprites::drawOverwrite(122, 0, Four, 0);
+   if (playerscore == 5) Sprites::drawOverwrite(122, 0, Five, 0);
+   if (playerscore == 6) Sprites::drawOverwrite(122, 0, Six, 0);
+   if (playerscore == 7) Sprites::drawOverwrite(122, 0, Seven, 0);
+   if (playerscore == 8) Sprites::drawOverwrite(122, 0, Eight, 0);
+   if (playerscore == 9) Sprites::drawOverwrite(122, 0, Nine, 0);
+   if (playerscore == 10); {
+   Sprites::drawOverwrite(122, 0, One, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   };
+   if (20 > playerscore > 10); { 
+   Sprites::drawOverwrite(122, 0, One, 0);
+      if (playerscore == 11) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 12) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 13) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 11) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 12) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 13) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 11) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 12) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 13) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 20); {
+   Sprites::drawOverwrite(122, 0, Two, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (30 > playerscore > 20); { 
+   Sprites::drawOverwrite(122, 0, Two, 0);
+      if (playerscore == 21) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 22) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 23) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 24) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 25) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 26) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 27) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 28) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 29) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 30); {
+   Sprites::drawOverwrite(122, 0, Three, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (40 > playerscore > 30); { 
+   Sprites::drawOverwrite(122, 0, Three, 0);
+      if (playerscore == 31) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 32) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 33) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 34) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 35) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 36) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 37) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 38) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 39) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 40); {
+   Sprites::drawOverwrite(122, 0, Four, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (50 > playerscore > 40); { 
+   Sprites::drawOverwrite(122, 0, Four, 0);
+      if (playerscore == 41) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 42) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 43) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 44) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 45) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 46) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 47) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 48) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 49) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 50); {
+   Sprites::drawOverwrite(122, 0, Five, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (60 > playerscore > 50); { 
+   Sprites::drawOverwrite(122, 0, Five, 0);
+      if (playerscore == 51) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 52) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 53) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 54) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 55) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 56) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 57) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 58) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 59) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }if (playerscore == 60); {
+   Sprites::drawOverwrite(122, 0, Six, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (70 > playerscore > 60); { 
+   Sprites::drawOverwrite(122, 0, Six, 0);
+      if (playerscore == 61) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 62) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 63) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 64) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 65) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 66) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 67) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 68) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 69) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 70); {
+   Sprites::drawOverwrite(122, 0, Seven, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (80 > playerscore > 70); { 
+   Sprites::drawOverwrite(122, 0, Seven, 0);
+      if (playerscore == 71) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 72) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 73) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 74) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 75) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 76) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 77) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 78) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 79) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 80); {
+   Sprites::drawOverwrite(122, 0, Eight, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (90 > playerscore > 80); { 
+   Sprites::drawOverwrite(122, 0, Eight, 0);
+      if (playerscore == 81) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 82) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 83) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 84) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 85) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 86) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 87) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 88) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 89) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 90); {
+   Sprites::drawOverwrite(122, 0, Nine, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   }
+   if (100 > playerscore > 90) { 
+   Sprites::drawOverwrite(122, 0, Nine, 0);
+      if (playerscore == 91) Sprites::drawOverwrite(122, 5, One, 0);
+      if (playerscore == 92) Sprites::drawOverwrite(122, 5, Two, 0);
+      if (playerscore == 93) Sprites::drawOverwrite(122, 5, Three, 0);
+      if (playerscore == 94) Sprites::drawOverwrite(122, 5, Four, 0);
+      if (playerscore == 95) Sprites::drawOverwrite(122, 5, Five, 0);
+      if (playerscore == 96) Sprites::drawOverwrite(122, 5, Six, 0);
+      if (playerscore == 97) Sprites::drawOverwrite(122, 5, Seven, 0);
+      if (playerscore == 98) Sprites::drawOverwrite(122, 5, Eight, 0);
+      if (playerscore == 99) Sprites::drawOverwrite(122, 5, Nine, 0);
+   }
+   if (playerscore == 100) {
+   Sprites::drawOverwrite(122, 0, One, 0); 
+   Sprites::drawOverwrite(122, 5, Zero, 0);
+   Sprites::drawOverwrite(122, 10, Zero, 0);
+   }
 }
 void setup() {
   // put your setup code here, to run once:
@@ -101,7 +316,6 @@ void loop() {
       Sprites::drawOverwrite(WIDTH - 10, 0, TITLE, 0);
       Sprites::drawOverwrite(WIDTH/2 -7, 15, TITLEsub, 0);
       if (arduboy.justPressed(A_BUTTON)) {
-        
         gamestate = 1;
       }
       break;
@@ -128,52 +342,38 @@ void loop() {
         player.x = player.x - 2;
       }
 
-      ///if player touches platform, playerx + player jumps. if player jumps above half the screen, move the screen instead of jumping and draw new platforms
-      if (player.jumping == false && (collision())) {
+      //if player touches platform, jump! 
+     if (player.jumping == false && (collision())) {
         player.jumping = true;
         player.jumpIndex++;
-      }
-      updateArdudle();
-      drawPlayer();
-      drawPlatformS();
-      drawPlatformM();
-      drawPlatformL();
-
-   /*   if (player.jumping == false && (player.x >= (WIDTH/2) && (collision()))) {
-        player.x = (WIDTH/2);
-        player.jumping = false;
-        platforms.x = platforms.x - jumpCoords[platforms.jumpIndex];
-        platforms.jumpIndex++;
-        platformm.x = platformm.x - jumpCoords[platformm.jumpIndex];
-        platformm.jumpIndex++;
-        platforml.x = platforml.x - jumpCoords[platforml.jumpIndex];
-        platforml.jumpIndex++;
-
         }
-     */
-      if (player.x >= 100) {
-        player.jumping = false;
-        platforms.x = random(WIDTH/3);
-        platforms.y = random(HEIGHT-10);
-        platforml.x = random(WIDTH/3, 2*WIDTH/3);
-        platforml.y = random(HEIGHT-28);
-        platformm.x = random(2*WIDTH/3, WIDTH);
-        platformm.y = random(HEIGHT-18);
-        playerscore++;
+        
+     if (platformLaunchCountdown == true) {
+      for (uint8_t i = 0; i < NUMBER_OF_PLATFORMS; i++) {
+        if (!platforms[i].enabled) {
+          launchPlatform(i);
+          break;
+        }
       }
-      
-
-      //print score
+      platformLaunchCountdown == false;
+     }
+     
+      updateArdudle();
+      updatePlatforms();
+      drawPlatforms();
+      drawPlayer();
+      drawScore();
       
       break;
 
     case 2:
       //gameover
       arduboy.clear();
-      if (playerscore > highscore) {
+      /*if (playerscore > highscore) {
         highscore = playerscore;
         EEPROM.put(EEPROM_SCORE, highscore);
-      }
+     }
+     */
       if (arduboy.justPressed(A_BUTTON)) {
         gamestate = 3;
       }
@@ -203,67 +403,15 @@ void loop() {
   }
   arduboy.display();
 }
-/*bool collision () {
-
-      if (collide(player.x, player.y - getImageHeight(player.image), player.image, platforms.x, platforms.y - getImageHeight(platforms.image), platforms.image)) {
-        return true;
-      }
-      if (collide(player.x, player.y - getImageHeight(player.image), player.image, platformm.x, platformm.y - getImageHeight(platformm.image), platformm.image)) {
-        return true;
-      }
-      if (collide(player.x, player.y - getImageHeight(player.image), player.image, platforml.x, platforml.y - getImageHeight(platforml.image), platforml.image)) {
-        return true;
-      }
-
-  return false;
-
-  }
-*/
-/*if ((player.x == platform.platSx + platform.platwidth && platform.platSy < player.y + getImageHeight(player.image) && platform.platSy + platform.platSheight > platform.platSy) && (player.y == platform.platSy + platform.platSheight && platform.platSx < player.x + getImageWidth(player.image) && platform.platSx + platform.platwidth > platform.platSx)) {
-        player.jumping = true;
-        sound.tone(NOTE_E5, 50);
-        }
-      if (player.x == platform.platMx + platform.platwidth && platform.platMy < player.y + getImageHeight(player.image) && platform.platMy + platform.platMheight > platform.platMy) {
-        player.jumping = true;
-        sound.tone(NOTE_E5, 50);
-        }
-      if (player.x == platform.platLx + platform.platwidth && platform.platLy < player.y + getImageHeight(player.image) && platform.platLy + platform.platLheight > platform.platLy) {
-        player.jumping = true;
-        sound.tone(NOTE_E5, 50);
-        }
-*/
 
 
 bool collision () {
-  ///for (byte i = 0; i < NUMBER_OF_OBSTACLES; i++) {
-      Rect playerRect = Rect{ player.x,
-                             player.y - getImageHeight(player.image),
-                             getImageWidth(player.image),
-                             getImageHeight(player.image) };
-      Rect psRect =
-        Rect{ platforms.x,
-              platforms.y - getImageHeight(platforms.image),
-              getImageWidth(platforms.image),
-              getImageHeight(platforms.image) };
-      Rect pmRect =
-        Rect{ platformm.x,
-              platformm.y - getImageHeight(platformm.image),
-              getImageWidth(platformm.image),
-              getImageHeight(platformm.image) };
-
-      Rect plRect =
-        Rect{ platforml.x,
-              platforml.y - getImageHeight(platforml.image),
-              getImageWidth(platforml.image),
-              getImageHeight(platforml.image) };
-      if (arduboy.collide(playerRect, psRect)) {
-        return true;
+  for (uint8_t i = 0; i < NUMBER_OF_PLATFORMS; i++) {
+    if (platforms[i].enabled == true) {
+      if (collide(player.x, player.y -getImageHeight(player.image), player.image, platforms[i].x, platforms[i].y - getImageHeight(platforms[i].image), platforms[i].image)) {
+        return true; 
       }
-      if (arduboy.collide(playerRect, pmRect)) {
-        return true;
-      }
-      if (arduboy.collide(playerRect, plRect)) {
-        return true;
-      }
+    }
+  }
   return false;
 }
