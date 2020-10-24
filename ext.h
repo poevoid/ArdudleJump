@@ -3,31 +3,17 @@ enum class Stance : uint8_t {
   Right,
 };
 enum class Type : uint8_t {
-  Solid,
-  Breakable,
-  Timer,
+  Small,
+  Medium,
+  Large,
+  Count_All_Platforms = 3
 };
-struct PlatformS {
+
+struct Platform {
   int x;
   int y;
   Type type;
-  uint8_t jumpIndex;
-  const uint8_t *image;
-  const uint8_t *mask;
-};
-struct PlatformM {
-  int x;
-  int y;
-  Type type;
-  uint8_t jumpIndex;
-  const uint8_t *image;
-  const uint8_t *mask;
-};
-struct PlatformL {
-  int x;
-  int y;
-  Type type;
-  uint8_t jumpIndex;
+  bool enabled;
   const uint8_t *image;
   const uint8_t *mask;
 };
