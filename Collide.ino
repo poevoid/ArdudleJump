@@ -1,10 +1,10 @@
-/*const uint8_t PROGMEM lookup[] { 0xFF >> 8, 0xFF >> 7, 0xFF >> 6, 0xFF >> 5, 0xFF >> 4, 0xFF >> 3, 0xFF >> 2, 0xFF >> 1 };
+const uint8_t PROGMEM lookup[] { 0xFF >> 8, 0xFF >> 7, 0xFF >> 6, 0xFF >> 5, 0xFF >> 4, 0xFF >> 3, 0xFF >> 2, 0xFF >> 1 };
 
 /* ----------------------------------------------------------------------------
  *  Detect a collision between two separate images ..
  *  
  */
- /*bool collide(int16_t x1, int16_t y1, const uint8_t *img1, int16_t x2, int16_t y2, const uint8_t *img2) {
+ bool collide(int16_t x1, int16_t y1, const uint8_t *img1, int16_t x2, int16_t y2, const uint8_t *img2) {
   
     #define IMG_DATA_OFFSET 2
     
@@ -139,4 +139,3 @@
   return false;
 
 }
-*/
